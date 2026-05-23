@@ -25,42 +25,59 @@ export default function AddProduct() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
 
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
-    });
-    if (!result.canceled) {
-      setImage(result.assets[0].uri);
-      await uploadImage(result.assets[0].uri);
-    }
-  };
+ const pickImage = async () => {
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images'],
+    allowsEditing: true,
+    aspect: [1, 1],
+    quality: 0.7,
+  });
+  if (!result.canceled) {
+    setImage(result.assets[0].uri);
+    await uploadImage(result.assets[0].uri);
+  }
+};
 
-  const uploadImage = async (uri: string) => {
-    setUploading(true);
-    try {
-      const formData = new FormData();
+const uploadImage = async (uri: string) => {
+  setUploading(true);
+  try {
+    let formData = new FormData();
+
+    // Web returns blob: URI, mobile returns file: URI
+    if (uri.startsWith('blob:') || uri.startsWith('data:')) {
+      // Web: fetch the blob and append directly
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      formData.append('file', blob, 'product.jpg');
+    } else {
+      // Mobile: use the file URI
       formData.append('file', {
         uri,
         type: 'image/jpeg',
         name: 'product.jpg',
       } as any);
-      formData.append('upload_preset', UPLOAD_PRESET);
-
-      const res = await fetch(
-        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-        { method: 'POST', body: formData }
-      );
-      const data = await res.json();
-      setImageUrl(data.secure_url);
-    } catch (e) {
-      setError('Image upload failed. Try again.');
-    } finally {
-      setUploading(false);
     }
-  };
+
+    formData.append('upload_preset', UPLOAD_PRESET);
+
+    const res = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+      { method: 'POST', body: formData }
+    );
+    const data = await res.json();
+    console.log('Cloudinary response:', data);
+    if (data.secure_url) {
+      setImageUrl(data.secure_url);
+    } else {
+      setError('Image upload failed: ' + data.error?.message);
+    }
+  } catch (e) {
+    console.log('Upload error:', e);
+    setError('Image upload failed. Try again.');
+  } finally {
+    setUploading(false);
+  }
+};
 
   const handleSubmit = async () => {
     if (!name || !price || !description || !category) {

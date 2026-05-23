@@ -1,24 +1,35 @@
-import { Text, View, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
-import { useState } from 'react';
+import { Text, View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, ActivityIndicator } from 'react-native';
+import { useState, useEffect } from 'react';
 import { router } from 'expo-router';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '@/config/firebase';
+
 const CATEGORIES = ['All', 'Shoes', 'Tops', 'Bags', 'Caps'];
 
-const PRODUCTS = [
-  { id: 1, name: 'Nike Air Force 1', price: 3500, category: 'Shoes', emoji: '👟', bg: '#FFF0EF' },
-  { id: 2, name: 'Polo Shirt', price: 850, category: 'Tops', emoji: '👕', bg: '#EEF2FF' },
-  { id: 3, name: 'Leather Bag', price: 1200, category: 'Bags', emoji: '👜', bg: '#EDFFF4' },
-  { id: 4, name: 'Classic Cap', price: 320, category: 'Caps', emoji: '🧢', bg: '#FFFBEE' },
-  { id: 5, name: 'Jordan 1 Retro', price: 4200, category: 'Shoes', emoji: '👟', bg: '#FFF0EF' },
-  { id: 6, name: 'Linen Shirt', price: 650, category: 'Tops', emoji: '👔', bg: '#EEF2FF' },
-  { id: 7, name: 'Tote Bag', price: 780, category: 'Bags', emoji: '👝', bg: '#EDFFF4' },
-  { id: 8, name: 'Adidas Slides', price: 980, category: 'Shoes', emoji: '🩴', bg: '#FFF0EF' },
-];
-
 export default function Home() {
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('All');
   const [search, setSearch] = useState('');
 
-  const filtered = PRODUCTS.filter(p => {
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const q = query(collection(db, 'products'), where('available', '==', true));
+      const snapshot = await getDocs(q);
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setProducts(data);
+    } catch (e) {
+      console.log('Error fetching products:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filtered = products.filter(p => {
     const matchCat = activeCategory === 'All' || p.category === activeCategory;
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
     return matchCat && matchSearch;
@@ -33,7 +44,7 @@ export default function Home() {
           <Text style={styles.location}>📍 Bole, Addis Ababa</Text>
           <Text style={styles.headerTitle}>FitGo</Text>
         </View>
-        <TouchableOpacity style={styles.cartBtn}>
+        <TouchableOpacity style={styles.cartBtn} onPress={() => router.push('/(tabs)/cart')}>
           <Text style={styles.cartEmoji}>🛒</Text>
         </TouchableOpacity>
       </View>
@@ -65,14 +76,21 @@ export default function Home() {
         </View>
 
         {/* Categories */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.catsScroll} contentContainerStyle={styles.cats}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.catsScroll}
+          contentContainerStyle={styles.cats}
+        >
           {CATEGORIES.map(cat => (
             <TouchableOpacity
               key={cat}
               style={[styles.cat, activeCategory === cat && styles.catActive]}
               onPress={() => setActiveCategory(cat)}
             >
-              <Text style={[styles.catText, activeCategory === cat && styles.catTextActive]}>{cat}</Text>
+              <Text style={[styles.catText, activeCategory === cat && styles.catTextActive]}>
+                {cat}
+              </Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -83,19 +101,42 @@ export default function Home() {
           <Text style={styles.gridCount}>{filtered.length} items</Text>
         </View>
 
-        <View style={styles.grid}>
-          {filtered.map(product => (
-           <TouchableOpacity key={product.id} style={styles.card} onPress={() => router.push(`/product/${product.id}`)}>
-  <View style={[styles.cardImg, { backgroundColor: product.bg }]}>
-    <Text style={styles.cardEmoji}>{product.emoji}</Text>
-  </View>
-  <View style={styles.cardInfo}>
-    <Text style={styles.cardName}>{product.name}</Text>
-    <Text style={styles.cardPrice}>ETB {product.price.toLocaleString()}</Text>
-  </View>
-</TouchableOpacity>
-          ))}
-        </View>
+        {loading ? (
+          <View style={styles.centered}>
+            <ActivityIndicator color="#FF3C2E" size="large" />
+          </View>
+        ) : filtered.length === 0 ? (
+          <View style={styles.centered}>
+            <Text style={styles.emptyEmoji}>🔍</Text>
+            <Text style={styles.emptyText}>No products found</Text>
+          </View>
+        ) : (
+          <View style={styles.grid}>
+            {filtered.map(product => (
+              <TouchableOpacity
+                key={product.id}
+                style={styles.card}
+                onPress={() => router.push(`/product/${product.id}`)}
+              >
+                {product.imageUrl ? (
+                  <Image
+                    source={{ uri: product.imageUrl }}
+                    style={styles.cardImg}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={[styles.cardImgPlaceholder, { backgroundColor: product.bg || '#FFF0EF' }]}>
+                    <Text style={styles.cardEmoji}>{product.emoji || '📦'}</Text>
+                  </View>
+                )}
+                <View style={styles.cardInfo}>
+                  <Text style={styles.cardName}>{product.name}</Text>
+                  <Text style={styles.cardPrice}>ETB {product.price?.toLocaleString()}</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
       </ScrollView>
     </View>
@@ -111,13 +152,9 @@ const styles = StyleSheet.create({
     paddingTop: 56, paddingBottom: 16,
   },
   location: { fontSize: 12, color: 'rgba(245,243,238,0.45)', marginBottom: 2 },
-  headerTitle: {
-    fontSize: 28, fontWeight: '900',
-    color: '#F5F3EE', letterSpacing: 1,
-  },
+  headerTitle: { fontSize: 28, fontWeight: '900', color: '#F5F3EE', letterSpacing: 1 },
   cartBtn: {
-    width: 44, height: 44,
-    backgroundColor: '#FF3C2E',
+    width: 44, height: 44, backgroundColor: '#FF3C2E',
     borderRadius: 14, alignItems: 'center', justifyContent: 'center',
   },
   cartEmoji: { fontSize: 20 },
@@ -176,18 +213,21 @@ const styles = StyleSheet.create({
   gridTitle: { fontSize: 18, fontWeight: '700', color: '#F5F3EE' },
   gridCount: { fontSize: 13, color: 'rgba(245,243,238,0.4)' },
 
+  centered: { padding: 48, alignItems: 'center' },
+  emptyEmoji: { fontSize: 40, marginBottom: 12 },
+  emptyText: { fontSize: 15, color: 'rgba(245,243,238,0.4)' },
+
   grid: {
     flexDirection: 'row', flexWrap: 'wrap',
-    paddingHorizontal: 20, gap: 12,
-    paddingBottom: 32,
+    paddingHorizontal: 20, gap: 12, paddingBottom: 32,
   },
   card: {
-    width: '47%',
-    backgroundColor: '#1C1C1C',
+    width: '47%', backgroundColor: '#1C1C1C',
     borderRadius: 16, overflow: 'hidden',
     borderWidth: 1, borderColor: 'rgba(245,243,238,0.06)',
   },
-  cardImg: {
+  cardImg: { height: 120, width: '100%' },
+  cardImgPlaceholder: {
     height: 120, alignItems: 'center', justifyContent: 'center',
   },
   cardEmoji: { fontSize: 48 },
