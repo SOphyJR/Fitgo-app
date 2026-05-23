@@ -7,45 +7,51 @@ import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/config/firebase';
 
 export default function Register() {
+  const [role, setRole] = useState('customer');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const handleRegister = async () => {
-    if (!name || !email || !phone || !password) {
-      setError('Please fill in all fields');
-      return;
-    }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
-    setLoading(true);
-    setError('');
-    try {
-      const userCred = await createUserWithEmailAndPassword(auth, email, password);
-      await updateProfile(userCred.user, { displayName: name });
-      await setDoc(doc(db, 'users', userCred.user.uid), {
-        name,
-        email,
-        phone,
-        role: 'customer',
-        createdAt: new Date().toISOString(),
-      });
+const handleRegister = async () => {
+  if (!name || !email || !phone || !password) {
+    setError('Please fill in all fields');
+    return;
+  }
+  if (password.length < 6) {
+    setError('Password must be at least 6 characters');
+    return;
+  }
+  setLoading(true);
+  setError('');
+  try {
+    const userCred = await createUserWithEmailAndPassword(auth, email, password);
+    await updateProfile(userCred.user, { displayName: name });
+    await setDoc(doc(db, 'users', userCred.user.uid), {
+      name,
+      email,
+      phone,
+      role,
+      status: role === 'customer' ? 'active' : 'pending',
+      createdAt: new Date().toISOString(),
+    });
+    // redirect based on role
+    if (role === 'customer') {
       router.replace('/(tabs)/home');
-    } catch (e: any) {
-      if (e.code === 'auth/email-already-in-use') {
-        setError('Email already registered');
-      } else {
-        setError('Something went wrong. Try again.');
-      }
-    } finally {
-      setLoading(false);
+    } else {
+      router.replace('/pending-approval');
     }
-  };
+  } catch (e: any) {
+    if (e.code === 'auth/email-already-in-use') {
+      setError('Email already registered');
+    } else {
+      setError('Something went wrong. Try again.');
+    }
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
@@ -105,6 +111,36 @@ export default function Register() {
           />
         </View>
       </View>
+      {/* Role Selection */}
+<View style={styles.inputWrap}>
+  <Text style={styles.label}>I WANT TO</Text>
+  <View style={styles.roleRow}>
+    <TouchableOpacity
+      style={[styles.roleBtn, role === 'customer' && styles.roleBtnActive]}
+      onPress={() => setRole('customer')}
+    >
+      <Text style={styles.roleEmoji}>🛍️</Text>
+      <Text style={[styles.roleText, role === 'customer' && styles.roleTextActive]}>Shop</Text>
+      <Text style={styles.roleSubText}>Buy products</Text>
+    </TouchableOpacity>
+    <TouchableOpacity
+      style={[styles.roleBtn, role === 'seller' && styles.roleBtnActive]}
+      onPress={() => setRole('seller')}
+    >
+      <Text style={styles.roleEmoji}>🏪</Text>
+      <Text style={[styles.roleText, role === 'seller' && styles.roleTextActive]}>Sell</Text>
+      <Text style={styles.roleSubText}>List products</Text>
+    </TouchableOpacity>
+    <TouchableOpacity
+      style={[styles.roleBtn, role === 'driver' && styles.roleBtnActive]}
+      onPress={() => setRole('driver')}
+    >
+      <Text style={styles.roleEmoji}>🛵</Text>
+      <Text style={[styles.roleText, role === 'driver' && styles.roleTextActive]}>Deliver</Text>
+      <Text style={styles.roleSubText}>Earn money</Text>
+    </TouchableOpacity>
+  </View>
+</View>
 
       <TouchableOpacity
         style={[styles.btnPrimary, loading && styles.btnDisabled]}
@@ -147,6 +183,18 @@ const styles = StyleSheet.create({
     color: 'rgba(245,243,238,0.4)',
     letterSpacing: 1.5, marginBottom: 8,
   },
+  roleRow: { flexDirection: 'row', gap: 10 },
+roleBtn: {
+  flex: 1, alignItems: 'center', padding: 16,
+  backgroundColor: 'rgba(255,255,255,0.05)',
+  borderRadius: 14, borderWidth: 1.5,
+  borderColor: 'rgba(245,243,238,0.08)',
+},
+roleBtnActive: { borderColor: '#FF3C2E', backgroundColor: 'rgba(255,60,46,0.08)' },
+roleEmoji: { fontSize: 24, marginBottom: 6 },
+roleText: { fontSize: 13, fontWeight: '700', color: 'rgba(245,243,238,0.5)', marginBottom: 2 },
+roleTextActive: { color: '#FF3C2E' },
+roleSubText: { fontSize: 10, color: 'rgba(245,243,238,0.3)', textAlign: 'center' },
   input: {
     backgroundColor: 'rgba(255,255,255,0.05)',
     borderWidth: 1.5, borderColor: 'rgba(245,243,238,0.08)',

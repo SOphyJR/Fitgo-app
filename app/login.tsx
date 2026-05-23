@@ -3,6 +3,9 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/config/firebase';
+import { getDoc, doc } from 'firebase/firestore';
+import { db } from '@/config/firebase';
+
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -11,21 +14,46 @@ export default function Login() {
   const [error, setError] = useState('');
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      setError('Please fill in all fields');
+  if (!email || !password) {
+    setError('Please fill in all fields');
+    return;
+  }
+  setLoading(true);
+  setError('');
+  try {
+    const userCred = await signInWithEmailAndPassword(auth, email, password);
+    
+    // get user data from Firestore
+    const userDoc = await getDoc(doc(db, 'users', userCred.user.uid));
+    const userData = userDoc.data();
+
+    if (!userData) {
+      router.replace('/(tabs)/home');
       return;
     }
-    setLoading(true);
-    setError('');
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
+
+    // route based on role and status
+    if (userData.role === 'customer') {
       router.replace('/(tabs)/home');
-    } catch (e: any) {
-      setError('Invalid email or password');
-    } finally {
-      setLoading(false);
+    } else if (userData.role === 'seller') {
+      if (userData.status === 'approved') {
+        router.replace('/seller');
+      } else {
+        router.replace('/pending-approval');
+      }
+    } else if (userData.role === 'driver') {
+      if (userData.status === 'approved') {
+        router.replace('/driver');
+      } else {
+        router.replace('/pending-approval');
+      }
     }
-  };
+  } catch (e: any) {
+    setError('Invalid email or password');
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <View style={styles.container}>
