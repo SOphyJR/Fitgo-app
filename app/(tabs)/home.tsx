@@ -75,6 +75,23 @@ export default function Home() {
           <Text style={styles.bannerEmoji}>👟</Text>
         </View>
 
+        {/* Stores section */}
+<Text style={styles.storesTitle}>Browse by Store</Text>
+<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storesList}>
+  {[...new Set(products.map((p: any) => p.sellerName).filter(Boolean))].map((store: any) => (
+    <TouchableOpacity
+      key={store}
+      style={styles.storeChip}
+      onPress={() => router.push(`/store/${encodeURIComponent(store)}`)}
+    >
+      <View style={styles.storeChipAvatar}>
+        <Text style={styles.storeChipAvatarText}>{store.charAt(0).toUpperCase()}</Text>
+      </View>
+      <Text style={styles.storeChipName}>{store}</Text>
+    </TouchableOpacity>
+  ))}
+</ScrollView>
+
         {/* Categories */}
         <ScrollView
           horizontal
@@ -182,6 +199,25 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.7)',
     letterSpacing: 1.5, marginBottom: 8,
   },
+  storesTitle: {
+  fontSize: 18, fontWeight: '700', color: '#F5F3EE',
+  paddingHorizontal: 20, marginBottom: 12, marginTop: 8,
+},
+storesList: { paddingHorizontal: 20, gap: 10 },
+storeChip: {
+  alignItems: 'center', gap: 8,
+  backgroundColor: '#1C1C1C',
+  borderRadius: 16, padding: 14,
+  borderWidth: 1, borderColor: 'rgba(245,243,238,0.06)',
+  minWidth: 90,
+},
+storeChipAvatar: {
+  width: 44, height: 44, borderRadius: 14,
+  backgroundColor: '#FF3C2E',
+  alignItems: 'center', justifyContent: 'center',
+},
+storeChipAvatarText: { fontSize: 20, fontWeight: '900', color: '#fff' },
+storeChipName: { fontSize: 12, color: '#F5F3EE', fontWeight: '600', textAlign: 'center' },
   bannerTitle: {
     fontSize: 22, fontWeight: '900',
     color: '#fff', lineHeight: 26, marginBottom: 16,
