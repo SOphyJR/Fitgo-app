@@ -1,10 +1,31 @@
-import { Text, View, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import { Text, View, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { useState } from 'react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/config/firebase';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      setError('Please fill in all fields');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      router.replace('/(tabs)/home');
+    } catch (e: any) {
+      setError('Invalid email or password');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -15,6 +36,8 @@ export default function Login() {
 
       <Text style={styles.h1}>WELCOME{'\n'}<Text style={styles.red}>BACK.</Text></Text>
       <Text style={styles.sub}>Sign in to your FitGo account</Text>
+
+      {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <View style={styles.form}>
         <View style={styles.inputWrap}>
@@ -47,8 +70,15 @@ export default function Login() {
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.btnPrimary} onPress={() => router.push('/(tabs)/home')}>
-        <Text style={styles.btnPrimaryText}>Sign In</Text>
+      <TouchableOpacity
+        style={[styles.btnPrimary, loading && styles.btnDisabled]}
+        onPress={handleLogin}
+        disabled={loading}
+      >
+        {loading
+          ? <ActivityIndicator color="#fff" />
+          : <Text style={styles.btnPrimaryText}>Sign In</Text>
+        }
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => router.push('/register')}>
@@ -61,12 +91,9 @@ export default function Login() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#0A0A0A',
-    paddingHorizontal: 28,
-    paddingTop: 64,
-    paddingBottom: 48,
-    justifyContent: 'center',
+    flex: 1, backgroundColor: '#0A0A0A',
+    paddingHorizontal: 28, paddingTop: 64,
+    paddingBottom: 48, justifyContent: 'center',
   },
   back: { marginBottom: 40 },
   backText: { color: 'rgba(245,243,238,0.5)', fontSize: 15 },
@@ -76,7 +103,11 @@ const styles = StyleSheet.create({
     letterSpacing: 1, marginBottom: 12,
   },
   red: { color: '#FF3C2E' },
-  sub: { fontSize: 15, color: 'rgba(245,243,238,0.45)', marginBottom: 40 },
+  sub: { fontSize: 15, color: 'rgba(245,243,238,0.45)', marginBottom: 16 },
+  error: {
+    color: '#FF3C2E', fontSize: 13,
+    marginBottom: 16, fontWeight: '500',
+  },
   form: { marginBottom: 32 },
   inputWrap: { marginBottom: 20 },
   label: {
@@ -88,25 +119,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.05)',
     borderWidth: 1.5,
     borderColor: 'rgba(245,243,238,0.08)',
-    borderRadius: 14,
-    padding: 16,
-    color: '#F5F3EE',
-    fontSize: 15,
+    borderRadius: 14, padding: 16,
+    color: '#F5F3EE', fontSize: 15,
   },
-  forgot: {
-    color: '#FF3C2E', fontSize: 13,
-    textAlign: 'right', marginTop: 4,
-  },
+  forgot: { color: '#FF3C2E', fontSize: 13, textAlign: 'right', marginTop: 4 },
   btnPrimary: {
-    backgroundColor: '#FF3C2E',
-    paddingVertical: 16,
-    borderRadius: 100,
-    alignItems: 'center',
-    marginBottom: 20,
+    backgroundColor: '#FF3C2E', paddingVertical: 16,
+    borderRadius: 100, alignItems: 'center', marginBottom: 20,
   },
+  btnDisabled: { opacity: 0.6 },
   btnPrimaryText: { color: '#fff', fontSize: 15, fontWeight: '600' },
-  switchText: {
-    color: 'rgba(245,243,238,0.45)',
-    fontSize: 14, textAlign: 'center',
-  },
+  switchText: { color: 'rgba(245,243,238,0.45)', fontSize: 14, textAlign: 'center' },
 });
