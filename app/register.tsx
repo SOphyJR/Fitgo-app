@@ -5,6 +5,7 @@ import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/config/firebase';
+import { api } from '@/config/api';
 
 export default function Register() {
   const [role, setRole] = useState('customer');
@@ -36,6 +37,15 @@ const handleRegister = async () => {
       status: role === 'customer' ? 'active' : 'pending',
       createdAt: new Date().toISOString(),
     });
+
+    // Save to PostgreSQL backend
+await api.createUser({
+  firebase_uid: userCred.user.uid,
+  name,
+  email,
+  phone,
+  role,
+});
     // redirect based on role
     if (role === 'customer') {
       router.replace('/(tabs)/home');

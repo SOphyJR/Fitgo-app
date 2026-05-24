@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { router } from 'expo-router';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/config/firebase';
+import { api } from '@/config/api';
 
 const CATEGORIES = ['All', 'Shoes', 'Tops', 'Bags', 'Caps'];
 
@@ -16,19 +17,16 @@ export default function Home() {
     fetchProducts();
   }, []);
 
-  const fetchProducts = async () => {
-    try {
-      const q = query(collection(db, 'products'), where('available', '==', true));
-      const snapshot = await getDocs(q);
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setProducts(data);
-    } catch (e) {
-      console.log('Error fetching products:', e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+const fetchProducts = async () => {
+  try {
+    const data = await api.getProducts();
+    setProducts(data);
+  } catch (e) {
+    console.log('Error fetching products:', e);
+  } finally {
+    setLoading(false);
+  }
+};
   const filtered = products.filter(p => {
     const matchCat = activeCategory === 'All' || p.category === activeCategory;
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());

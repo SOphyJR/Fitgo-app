@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState, useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
-
+ import { api } from '@/config/api';
 const SIZES = ['XS', 'S', 'M', 'L', 'XL'];
 const SHOE_SIZES = ['39', '40', '41', '42', '43', '44'];
 
@@ -18,19 +18,18 @@ export default function ProductDetail() {
     fetchProduct();
   }, []);
 
-  const fetchProduct = async () => {
-    try {
-      const docRef = doc(db, 'products', id as string);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        setProduct({ id: docSnap.id, ...docSnap.data() });
-      }
-    } catch (e) {
-      console.log('Error fetching product:', e);
-    } finally {
-      setLoading(false);
-    }
-  };
+
+
+const fetchProduct = async () => {
+  try {
+    const data = await api.getProduct(id as string);
+    setProduct(data);
+  } catch (e) {
+    console.log('Error fetching product:', e);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleAddToCart = () => {
     setAdded(true);
