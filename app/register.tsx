@@ -38,20 +38,24 @@ const handleRegister = async () => {
       createdAt: new Date().toISOString(),
     });
 
-    // Save to PostgreSQL backend
-await api.createUser({
-  firebase_uid: userCred.user.uid,
-  name,
-  email,
-  phone,
-  role,
-});
-    // redirect based on role
-    if (role === 'customer') {
-      router.replace('/(tabs)/home');
-    } else {
-      router.replace('/pending-approval');
-    }
+// Save to PostgreSQL backend
+    await api.createUser({
+      firebase_uid: userCred.user.uid,
+      name,
+      email,
+      phone,
+      role,
+    });
+
+    // Send OTP email
+    await api.sendOTP(email, name);
+
+    // Go to OTP verification screen
+    router.replace({
+      pathname: '/verify-otp',
+      params: { email, name, role }
+    });
+
   } catch (e: any) {
     if (e.code === 'auth/email-already-in-use') {
       setError('Email already registered');
@@ -62,6 +66,7 @@ await api.createUser({
     setLoading(false);
   }
 };
+
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>

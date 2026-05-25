@@ -98,4 +98,32 @@ export const api = {
     });
     return res.json();
   },
+  // Auth / OTP
+sendOTP: async (email: string, name: string) => {
+  const res = await fetch(`${API_URL}/auth/send-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, name }),
+  });
+  return res.json();
+},
+
+verifyOTP: async (email: string, code: string) => {
+  const res = await fetch(`${API_URL}/auth/verify-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, code }),
+  });
+  return res.json();
+},
+
+resendOTP: async (email: string, name: string) => {
+  const res = await fetch(`${API_URL}/auth/resend-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, name }),
+  });
+  return res.json();
+},
 };
+
