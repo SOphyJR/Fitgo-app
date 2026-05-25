@@ -5,6 +5,7 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/config/firebase';
 import { getDoc, doc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
+import { api } from '@/config/api';
 
 
 export default function Login() {
@@ -13,7 +14,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleLogin = async () => {
+ const handleLogin = async () => {
   if (!email || !password) {
     setError('Please fill in all fields');
     return;
@@ -22,17 +23,17 @@ export default function Login() {
   setError('');
   try {
     const userCred = await signInWithEmailAndPassword(auth, email, password);
-    
-    // get user data from Firestore
-    const userDoc = await getDoc(doc(db, 'users', userCred.user.uid));
-    const userData = userDoc.data();
 
-    if (!userData) {
+    // Get user data from PostgreSQL backend
+    const userData = await api.getUser(userCred.user.uid);
+
+    if (!userData || userData.error) {
+      // fallback — just go home
       router.replace('/(tabs)/home');
       return;
     }
 
-    // route based on role and status
+    // Route based on role and status
     if (userData.role === 'customer') {
       router.replace('/(tabs)/home');
     } else if (userData.role === 'seller') {

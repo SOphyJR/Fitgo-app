@@ -125,5 +125,14 @@ resendOTP: async (email: string, name: string) => {
   });
   return res.json();
 },
+approveSeller: async (email: string) => {
+  const res = await fetch(`${API_URL}/auth/approve-seller`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  return res.json();
+},
 };
+
 
