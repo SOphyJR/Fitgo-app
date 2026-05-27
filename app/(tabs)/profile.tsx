@@ -2,7 +2,9 @@ import { Text, View, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { router } from 'expo-router';
 import { auth } from '@/config/firebase';
 import { signOut } from 'firebase/auth';
-
+import { Alert } from 'react-native';
+import { deleteUser } from 'firebase/auth';
+import { api } from '@/config/api';
 export default function Profile() {
   const user = auth.currentUser;
 
@@ -10,7 +12,30 @@ export default function Profile() {
     await signOut(auth);
     router.replace('/');
   };
-
+const handleDeleteAccount = async () => {
+  Alert.alert(
+    'Delete Account',
+    'Are you sure? This will permanently delete your account. This cannot be undone.',
+    [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            const currentUser = auth.currentUser;
+            if (!currentUser) return;
+            await api.deleteAccount(currentUser.uid);
+            await deleteUser(currentUser);
+            router.replace('/');
+          } catch (e) {
+            Alert.alert('Error', 'Failed to delete account. Please try again.');
+          }
+        },
+      },
+    ]
+  );
+};
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -50,6 +75,10 @@ export default function Profile() {
         <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
           <Text style={styles.signOutText}>Sign Out</Text>
         </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.deleteBtn} onPress={handleDeleteAccount}>
+  <Text style={styles.deleteBtnText}>Delete Account</Text>
+</TouchableOpacity>
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -94,4 +123,11 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,60,46,0.2)',
   },
   signOutText: { color: '#FF3C2E', fontSize: 15, fontWeight: '700' },
+
+  deleteBtn: {
+  marginHorizontal: 24, marginTop: 12,
+  borderRadius: 16, padding: 16,
+  alignItems: 'center',
+},
+deleteBtnText: { color: 'rgba(245,243,238,0.25)', fontSize: 13 },
 });

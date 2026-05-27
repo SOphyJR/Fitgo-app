@@ -1,6 +1,10 @@
 const API_URL = 'https://fitgo-backend-production-03ee.up.railway.app/api';
 
 export const api = {
+  getUserByEmail: async (email: string) => {
+  const res = await fetch(`${API_URL}/users/email/${encodeURIComponent(email)}`);
+  return res.json();
+},
   // Products
   getProducts: async (category?: string, search?: string) => {
     let url = `${API_URL}/products`;
@@ -130,6 +134,12 @@ approveSeller: async (email: string) => {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email }),
+  });
+  return res.json();
+},
+deleteAccount: async (firebase_uid: string) => {
+  const res = await fetch(`${API_URL}/users/${firebase_uid}`, {
+    method: 'DELETE',
   });
   return res.json();
 },

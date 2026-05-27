@@ -15,6 +15,9 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  
+
 const handleRegister = async () => {
   if (!name || !email || !phone || !password) {
     setError('Please fill in all fields');
@@ -27,46 +30,31 @@ const handleRegister = async () => {
   setLoading(true);
   setError('');
   try {
-    const userCred = await createUserWithEmailAndPassword(auth, email, password);
-    await updateProfile(userCred.user, { displayName: name });
-    await setDoc(doc(db, 'users', userCred.user.uid), {
-      name,
-      email,
-      phone,
-      role,
-      status: role === 'customer' ? 'active' : 'pending',
-      createdAt: new Date().toISOString(),
-    });
-
-// Save to PostgreSQL backend
-    await api.createUser({
-      firebase_uid: userCred.user.uid,
-      name,
-      email,
-      phone,
-      role,
-    });
-
-    // Send OTP email
-    await api.sendOTP(email, name);
-
-    // Go to OTP verification screen
-    router.replace({
-      pathname: '/verify-otp',
-      params: { email, name, role }
-    });
-
-  } catch (e: any) {
-    if (e.code === 'auth/email-already-in-use') {
-      setError('Email already registered');
-    } else {
-      setError('Something went wrong. Try again.');
+    // Check if email already exists FIRST
+    const existingUser = await api.getUserByEmail(email);
+    if (existingUser && !existingUser.error) {
+      setError('Email already registered. Please sign in.');
+      return;
     }
+
+    // Then send OTP
+    const result = await api.sendOTP(email, name);
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+
+    // Go to OTP screen
+    router.push({
+      pathname: '/verify-otp',
+      params: { email, name, phone, password, role }
+    });
+  } catch (e: any) {
+    setError('Something went wrong. Try again.');
   } finally {
     setLoading(false);
   }
 };
-
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>

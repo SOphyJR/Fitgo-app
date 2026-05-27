@@ -1,10 +1,13 @@
-import { Text, View, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { useState, useEffect, useRef } from 'react';
 import { api } from '@/config/api';
+import { auth } from '@/config/firebase';
+import { router, useLocalSearchParams } from 'expo-router';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+
 
 export default function VerifyOTP() {
-  const { email, name, role } = useLocalSearchParams();
+  const { email, name, role, phone, password } = useLocalSearchParams();
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
@@ -35,31 +38,53 @@ export default function VerifyOTP() {
     }
   };
 
-  const handleVerify = async () => {
-    const code = otp.join('');
-    if (code.length < 6) {
-      setError('Please enter the full 6-digit code');
+const handleVerify = async () => {
+  const code = otp.join('');
+  if (code.length < 6) {
+    setError('Please enter the full 6-digit code');
+    return;
+  }
+  setLoading(true);
+  setError('');
+  try {
+    // Verify OTP first
+    const result = await api.verifyOTP(email as string, code);
+    if (!result.verified) {
+      setError(result.error || 'Invalid code. Try again.');
       return;
     }
-    setLoading(true);
-    setError('');
-    try {
-      const result = await api.verifyOTP(email as string, code);
-      if (result.verified) {
-        if (role === 'customer') {
-          router.replace('/(tabs)/home');
-        } else {
-          router.replace('/pending-approval');
-        }
-      } else {
-        setError(result.error || 'Invalid code. Try again.');
-      }
-    } catch (e) {
-      setError('Something went wrong. Try again.');
-    } finally {
-      setLoading(false);
+
+    // OTP verified — NOW create Firebase account
+    const userCred = await createUserWithEmailAndPassword(
+      auth, email as string, password as string
+    );
+    await updateProfile(userCred.user, { displayName: name as string });
+
+    // Save to PostgreSQL
+    await api.createUser({
+      firebase_uid: userCred.user.uid,
+      name,
+      email,
+      phone,
+      role,
+    });
+
+    // Route based on role
+    if (role === 'customer') {
+      router.replace('/(tabs)/home');
+    } else {
+      router.replace('/pending-approval');
     }
-  };
+  } catch (e: any) {
+  if (e.code === 'auth/email-already-in-use') {
+    setError('This email is already registered. Please sign in instead.');
+  } else {
+    setError('Something went wrong. Try again.');
+  }
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleResend = async () => {
     if (countdown > 0) return;
