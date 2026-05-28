@@ -1,10 +1,8 @@
-import { Text, View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { router } from 'expo-router';
-import { auth } from '@/config/firebase';
-import { signOut } from 'firebase/auth';
-import { Alert } from 'react-native';
-import { deleteUser } from 'firebase/auth';
 import { api } from '@/config/api';
+import { auth } from '@/config/firebase';
+import { router } from 'expo-router';
+import { deleteUser, signOut } from 'firebase/auth';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 export default function Profile() {
   const user = auth.currentUser;
 
@@ -12,6 +10,7 @@ export default function Profile() {
     await signOut(auth);
     router.replace('/');
   };
+  
 const handleDeleteAccount = async () => {
   Alert.alert(
     'Delete Account',
@@ -124,10 +123,11 @@ const styles = StyleSheet.create({
   },
   signOutText: { color: '#FF3C2E', fontSize: 15, fontWeight: '700' },
 
-  deleteBtn: {
+deleteBtn: {
   marginHorizontal: 24, marginTop: 12,
   borderRadius: 16, padding: 16,
-  alignItems: 'center',
+  alignItems: 'center', borderWidth: 1,
+  borderColor: 'rgb(250, 17, 0)',
 },
-deleteBtnText: { color: 'rgba(245,243,238,0.25)', fontSize: 13 },
+deleteBtnText: { color: 'rgb(245, 243, 238)', fontSize: 14 },
 });
