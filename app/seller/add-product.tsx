@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { collection, addDoc } from 'firebase/firestore';
 import { db, auth } from '@/config/firebase';
 import * as ImagePicker from 'expo-image-picker';
+import { api } from '@/config/api';
 
 const CATEGORIES = ['Shoes', 'Tops', 'Bags', 'Caps', 'Accessories'];
 const EMOJIS: Record<string, string> = {
@@ -79,34 +80,60 @@ const uploadImage = async (uri: string) => {
   }
 };
 
-  const handleSubmit = async () => {
-    if (!name || !price || !description || !category) {
-      setError('Please fill in all fields');
+
+const handleSubmit = async () => {
+  if (!name || !price || !description || !category) {
+    setError('Please fill in all fields');
+    return;
+  }
+  setLoading(true);
+  setError('');
+  try {
+    const currentUser = auth.currentUser;
+    if (!currentUser) return;
+
+    // Get user from PostgreSQL
+    const userData = await api.getUser(currentUser.uid);
+    if (!userData || userData.error) {
+      setError('User not found. Please log in again.');
       return;
     }
-    setLoading(true);
-    setError('');
-    try {
-      await addDoc(collection(db, 'products'), {
-        name,
-        price: Number(price),
-        description,
-        category,
-        emoji: EMOJIS[category],
-        imageUrl: imageUrl || '',
-        sellerId: auth.currentUser?.uid,
-        sellerName: auth.currentUser?.displayName,
-        createdAt: new Date().toISOString(),
-        available: true,
+
+    // Check if seller has a store, if not create one
+    let storeId = userData.store_id;
+    if (!storeId) {
+      const store = await api.createStore({
+        owner_id: userData.id,
+        name: currentUser.displayName + ' Store',
+        description: 'Official FitGo store',
+        location: 'Addis Ababa',
+        status: 'approved',
       });
-      setSuccess(true);
-      setTimeout(() => router.back(), 1500);
-    } catch (e) {
-      setError('Failed to add product. Try again.');
-    } finally {
-      setLoading(false);
+      storeId = store.id;
+      // Save store_id to user
+      await api.updateUserStore(currentUser.uid, storeId);
     }
-  };
+
+    // Create product in PostgreSQL
+    await api.createProduct({
+      store_id: storeId,
+      name,
+      price: Number(price),
+      description,
+      category,
+      emoji: EMOJIS[category],
+      image_url: imageUrl || '',
+      available: true,
+    });
+
+    setSuccess(true);
+    setTimeout(() => router.back(), 1500);
+  } catch (e) {
+    setError('Failed to add product. Try again.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <View style={styles.container}>

@@ -41,14 +41,14 @@ export const api = {
     return res.json();
   },
 
-  createStore: async (data: any) => {
-    const res = await fetch(`${API_URL}/stores`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    return res.json();
-  },
+ createStore: async (data: any) => {
+  const res = await fetch(`${API_URL}/stores`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return res.json();
+},
 
   // Users
   getUser: async (firebase_uid: string) => {
@@ -140,6 +140,14 @@ approveSeller: async (email: string) => {
 deleteAccount: async (firebase_uid: string) => {
   const res = await fetch(`${API_URL}/users/${firebase_uid}`, {
     method: 'DELETE',
+  });
+  return res.json();
+},
+updateUserStore: async (firebase_uid: string, store_id: string) => {
+  const res = await fetch(`${API_URL}/users/${firebase_uid}/store`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ store_id }),
   });
   return res.json();
 },
