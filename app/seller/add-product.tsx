@@ -1,10 +1,10 @@
-import { Text, View, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { collection, addDoc } from 'firebase/firestore';
-import { db, auth } from '@/config/firebase';
-import * as ImagePicker from 'expo-image-picker';
+import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+
 import { api } from '@/config/api';
+import { auth } from '@/config/firebase';
+import * as ImagePicker from 'expo-image-picker';
 
 const CATEGORIES = ['Shoes', 'Tops', 'Bags', 'Caps', 'Accessories'];
 const EMOJIS: Record<string, string> = {
@@ -90,18 +90,23 @@ const handleSubmit = async () => {
   setError('');
   try {
     const currentUser = auth.currentUser;
-    if (!currentUser) return;
-
-    // Get user from PostgreSQL
-    const userData = await api.getUser(currentUser.uid);
-    if (!userData || userData.error) {
-      setError('User not found. Please log in again.');
+    console.log('Current user:', currentUser?.uid);
+    if (!currentUser) {
+      setError('Not logged in!');
       return;
     }
 
-    // Check if seller has a store, if not create one
+    const userData = await api.getUser(currentUser.uid);
+    console.log('User data:', userData);
+    if (!userData || userData.error) {
+      setError('User not found: ' + JSON.stringify(userData));
+      return;
+    }
+
+    console.log('Store ID:', userData.store_id);
     let storeId = userData.store_id;
     if (!storeId) {
+      console.log('Creating store...');
       const store = await api.createStore({
         owner_id: userData.id,
         name: currentUser.displayName + ' Store',
@@ -109,13 +114,13 @@ const handleSubmit = async () => {
         location: 'Addis Ababa',
         status: 'approved',
       });
+      console.log('Store created:', store);
       storeId = store.id;
-      // Save store_id to user
       await api.updateUserStore(currentUser.uid, storeId);
     }
 
-    // Create product in PostgreSQL
-    await api.createProduct({
+    console.log('Creating product with store_id:', storeId);
+    const product = await api.createProduct({
       store_id: storeId,
       name,
       price: Number(price),
@@ -125,16 +130,17 @@ const handleSubmit = async () => {
       image_url: imageUrl || '',
       available: true,
     });
+    console.log('Product created:', product);
 
     setSuccess(true);
     setTimeout(() => router.back(), 1500);
-  } catch (e) {
-    setError('Failed to add product. Try again.');
+  } catch (e: any) {
+    console.log('Submit error:', e);
+    setError('Failed: ' + e.message);
   } finally {
     setLoading(false);
   }
 };
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>
