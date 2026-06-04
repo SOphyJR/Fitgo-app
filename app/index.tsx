@@ -29,9 +29,13 @@ export default function Onboarding() {
         <Text style={styles.btnPrimaryText}>Get Started</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.btnSecondary} onPress={() => router.push('/login')}>
-        <Text style={styles.btnSecondaryText}>I already have an account</Text>
-      </TouchableOpacity>
+<TouchableOpacity style={styles.btnPrimary} onPress={() => router.push('/phone-login')}>
+  <Text style={styles.btnPrimaryText}>Get Started with Phone</Text>
+</TouchableOpacity>
+
+<TouchableOpacity style={styles.btnSecondary} onPress={() => router.push('/login')}>
+  <Text style={styles.btnSecondaryText}>Sign in with Email</Text>
+</TouchableOpacity> 
 
     </View>
   );

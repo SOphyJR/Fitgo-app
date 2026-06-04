@@ -1,35 +1,16 @@
 import { Text, View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { useState } from 'react';
-
-const INITIAL_CART = [
-  { id: 1, name: 'Nike Air Force 1', price: 3500, emoji: '👟', bg: '#FFF0EF', size: '42', qty: 1 },
-  { id: 2, name: 'Polo Shirt', price: 850, emoji: '👕', bg: '#EEF2FF', size: 'M', qty: 2 },
-];
+import { useCart } from '@/context/CartContext';
+import { Image } from 'react-native';
 
 export default function Cart() {
-  const [items, setItems] = useState(INITIAL_CART);
-
-  const updateQty = (id: number, delta: number) => {
-    setItems(prev =>
-      prev.map(item =>
-        item.id === id ? { ...item, qty: Math.max(1, item.qty + delta) } : item
-      )
-    );
-  };
-
-  const removeItem = (id: number) => {
-    setItems(prev => prev.filter(item => item.id !== id));
-  };
-
-  const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const { items, updateQty, removeItem, total } = useCart();
   const delivery = 150;
-  const total = subtotal + delivery;
+  const grandTotal = total + delivery;
 
   return (
     <View style={styles.container}>
-
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Cart</Text>
         <Text style={styles.headerCount}>{items.length} items</Text>
@@ -48,10 +29,14 @@ export default function Cart() {
         <>
           <ScrollView showsVerticalScrollIndicator={false} style={styles.list}>
             {items.map(item => (
-              <View key={item.id} style={styles.cartItem}>
-                <View style={[styles.itemImg, { backgroundColor: item.bg }]}>
-                  <Text style={styles.itemEmoji}>{item.emoji}</Text>
-                </View>
+             <View key={`${item.id}-${item.size}`} style={styles.cartItem}>
+                {item.image_url ? (
+                  <Image source={{ uri: item.image_url }} style={styles.itemImg} resizeMode="cover" />
+                ) : (
+                  <View style={[styles.itemImg, { backgroundColor: '#FFF0EF', alignItems: 'center', justifyContent: 'center' }]}>
+                    <Text style={{ fontSize: 30 }}>{item.emoji}</Text>
+                  </View>
+                )}
                 <View style={styles.itemInfo}>
                   <Text style={styles.itemName}>{item.name}</Text>
                   <Text style={styles.itemSize}>Size: {item.size}</Text>
@@ -74,12 +59,11 @@ export default function Cart() {
               </View>
             ))}
 
-            {/* Summary */}
             <View style={styles.summary}>
               <Text style={styles.summaryTitle}>Order Summary</Text>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Subtotal</Text>
-                <Text style={styles.summaryValue}>ETB {subtotal.toLocaleString()}</Text>
+                <Text style={styles.summaryValue}>ETB {total.toLocaleString()}</Text>
               </View>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Delivery</Text>
@@ -87,21 +71,20 @@ export default function Cart() {
               </View>
               <View style={[styles.summaryRow, styles.totalRow]}>
                 <Text style={styles.totalLabel}>Total</Text>
-                <Text style={styles.totalValue}>ETB {total.toLocaleString()}</Text>
+                <Text style={styles.totalValue}>ETB {grandTotal.toLocaleString()}</Text>
               </View>
             </View>
 
             <View style={{ height: 120 }} />
           </ScrollView>
 
-          {/* Checkout Button */}
           <View style={styles.bottomBar}>
             <TouchableOpacity
               style={styles.checkoutBtn}
               onPress={() => router.push('/checkout')}
             >
               <Text style={styles.checkoutBtnText}>Proceed to Checkout</Text>
-              <Text style={styles.checkoutTotal}>ETB {total.toLocaleString()}</Text>
+              <Text style={styles.checkoutTotal}>ETB {grandTotal.toLocaleString()}</Text>
             </TouchableOpacity>
           </View>
         </>

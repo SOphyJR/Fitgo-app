@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
  import { api } from '@/config/api';
+import { useCart } from '@/context/CartContext';
+
+
 const SIZES = ['XS', 'S', 'M', 'L', 'XL'];
 const SHOE_SIZES = ['39', '40', '41', '42', '43', '44'];
 
@@ -18,6 +21,7 @@ export default function ProductDetail() {
     fetchProduct();
   }, []);
 
+  
 
 
 const fetchProduct = async () => {
@@ -31,10 +35,28 @@ const fetchProduct = async () => {
   }
 };
 
-  const handleAddToCart = () => {
-    setAdded(true);
-    setTimeout(() => setAdded(false), 2000);
-  };
+
+  // Inside component:
+const { addItem } = useCart();
+
+const handleAddToCart = () => {
+  if (!selectedSize) {
+    alert('Please select a size');
+    return;
+  }
+  addItem({
+    id: product.id,
+    name: product.name,
+    price: product.price,
+    image_url: product.image_url || '',
+    emoji: product.emoji || '📦',
+    store_id: product.store_id,
+    size: selectedSize,
+    qty: 1,
+  });
+  setAdded(true);
+  setTimeout(() => setAdded(false), 2000);
+};
 
   if (loading) {
     return (

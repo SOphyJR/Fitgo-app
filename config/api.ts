@@ -151,6 +151,37 @@ updateUserStore: async (firebase_uid: string, store_id: string) => {
   });
   return res.json();
 },
+
+sendPhoneOTP: async (phone: string, role: string) => {
+  const res = await fetch(`${API_URL}/auth/send-phone-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone, role }),
+  });
+  return res.json();
+},
+
+verifyPhoneOTP: async (phone: string, code: string, role: string) => {
+  const res = await fetch(`${API_URL}/auth/verify-phone-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone, code, role }),
+  });
+  return res.json();
+},
+initiatePayment: async (data: {
+  amount: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+  tx_ref: string;
+  phone_number: string;
+}) => {
+  const res = await fetch(`${API_URL}/orders/initiate-payment`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return res.json();
+},
 };
-
-

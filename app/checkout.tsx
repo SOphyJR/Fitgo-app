@@ -1,15 +1,89 @@
-import { Text, View, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { Text, View, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { useState } from 'react';
+import { api } from '@/config/api';
+import { auth } from '@/config/firebase';
+
+import { useCart } from '@/context/CartContext';
 
 export default function Checkout() {
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
   const [payMethod, setPayMethod] = useState('cash');
+  const [loading, setLoading] = useState(false);
 
-  const handleOrder = () => {
-    router.push('/tracking');
-  };
+// Inside component:
+const { items, total, clearCart } = useCart();
+const delivery = 150;
+const grandTotal = total + delivery;
+
+const handleOrder = async () => {
+  if (!address || !phone) {
+    alert('Please fill in delivery address and phone number');
+    return;
+  }
+
+  if (items.length === 0) {
+    alert('Your cart is empty');
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const currentUser = auth.currentUser;
+    if (!currentUser) return;
+
+    const userData = await api.getUser(currentUser.uid);
+    if (!userData || userData.error) {
+      alert('User not found. Please log in again.');
+      return;
+    }
+
+    // 1. Create order first
+    const order = await api.createOrder({
+      customer_id: userData.id,
+      store_id: items[0]?.store_id,
+      items: items.map(item => ({
+        product_id: item.id,
+        quantity: item.qty,
+        size: item.size,
+        price: item.price,
+      })),
+      total_amount: grandTotal,
+      delivery_address: address,
+      delivery_phone: phone,
+      payment_method: payMethod,
+    });
+
+    // 2. Handle Chapa payment
+    if (payMethod === 'chapa') {
+      const nameParts = (currentUser.displayName || 'FitGo User').split(' ');
+
+      const payment = await api.initiatePayment({
+        amount: grandTotal,
+        email: currentUser.email || '',
+        first_name: nameParts[0] || 'FitGo',
+        last_name: nameParts[1] || 'User',
+        tx_ref: order.id,
+        phone_number: userData.phone || '',
+      });
+
+      if (payment.data?.checkout_url) {
+        const { openURL } = await import('expo-linking');
+        openURL(payment.data.checkout_url);
+        return;
+      }
+    }
+
+    clearCart();
+    router.push(`/tracking?orderId=${order.id}`);
+  } catch (e) {
+    alert('Failed to place order. Try again.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <View style={styles.container}>
@@ -74,37 +148,41 @@ export default function Checkout() {
           ))}
         </View>
 
-        {/* Order Summary */}
-        <Text style={styles.sectionTitle}>Order Summary</Text>
-        <View style={styles.summary}>
-          {[
-            { name: 'Nike Air Force 1', size: '42', qty: 1, price: 3500 },
-            { name: 'Polo Shirt', size: 'M', qty: 2, price: 1700 },
-          ].map((item, i) => (
-            <View key={i} style={styles.summaryItem}>
-              <Text style={styles.summaryName}>{item.name} x{item.qty}</Text>
-              <Text style={styles.summaryPrice}>ETB {item.price.toLocaleString()}</Text>
-            </View>
-          ))}
-          <View style={styles.divider} />
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>Delivery</Text>
-            <Text style={styles.summaryPrice}>ETB 150</Text>
-          </View>
-          <View style={styles.summaryItem}>
-            <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalPrice}>ETB 5,350</Text>
-          </View>
-        </View>
+       {/* Order Summary */}
+<Text style={styles.sectionTitle}>Order Summary</Text>
+<View style={styles.summary}>
+  {items.map((item, i) => (
+    <View key={i} style={styles.summaryItem}>
+      <Text style={styles.summaryName}>{item.name} x{item.qty}</Text>
+      <Text style={styles.summaryPrice}>ETB {(item.price * item.qty).toLocaleString()}</Text>
+    </View>
+  ))}
+  <View style={styles.divider} />
+  <View style={styles.summaryItem}>
+    <Text style={styles.summaryLabel}>Delivery</Text>
+    <Text style={styles.summaryPrice}>ETB 150</Text>
+  </View>
+  <View style={styles.summaryItem}>
+    <Text style={styles.totalLabel}>Total</Text>
+    <Text style={styles.totalPrice}>ETB {grandTotal.toLocaleString()}</Text>
+  </View>
+</View>
 
         <View style={{ height: 120 }} />
       </ScrollView>
 
       {/* Place Order */}
       <View style={styles.bottomBar}>
-        <TouchableOpacity style={styles.orderBtn} onPress={handleOrder}>
-          <Text style={styles.orderBtnText}>Place Order →</Text>
-        </TouchableOpacity>
+    <TouchableOpacity
+  style={[styles.orderBtn, loading && { opacity: 0.6 }]}
+  onPress={handleOrder}
+  disabled={loading}
+>
+  {loading
+    ? <ActivityIndicator color="#fff" />
+    : <Text style={styles.orderBtnText}>Place Order →</Text>
+  }
+</TouchableOpacity>
       </View>
 
     </View>
