@@ -18,7 +18,7 @@ const delivery = 150;
 const grandTotal = total + delivery;
 
 const handleOrder = async () => {
-  if (!address || !phone) {
+  if (!address.trim() || !phone.trim()) {
     alert('Please fill in delivery address and phone number');
     return;
   }
@@ -32,54 +32,105 @@ const handleOrder = async () => {
 
   try {
     const currentUser = auth.currentUser;
-    if (!currentUser) return;
+
+    if (!currentUser) {
+      alert('Please login first');
+      return;
+    }
 
     const userData = await api.getUser(currentUser.uid);
+
     if (!userData || userData.error) {
       alert('User not found. Please log in again.');
       return;
     }
 
-    // 1. Create order first
+    const storeId = items[0]?.store_id;
+
+    if (!storeId) {
+      alert('Invalid store.');
+      return;
+    }
+
+    // Create order
     const order = await api.createOrder({
       customer_id: userData.id,
-      store_id: items[0]?.store_id,
+      store_id: storeId,
       items: items.map(item => ({
         product_id: item.id,
         quantity: item.qty,
         size: item.size,
-        price: item.price,
+        price: Number(item.price),
       })),
-      total_amount: grandTotal,
+      total_amount: Number(grandTotal),
       delivery_address: address,
       delivery_phone: phone,
       payment_method: payMethod,
+      status: payMethod === 'cash' ? 'confirmed' : 'pending_payment',
     });
 
-    // 2. Handle Chapa payment
+    if (!order?.id) {
+      throw new Error('Order creation failed');
+    }
+
+    // ==========================
+    // ONLINE PAYMENT (CHAPA)
+    // ==========================
     if (payMethod === 'chapa') {
-      const nameParts = (currentUser.displayName || 'FitGo User').split(' ');
+      const nameParts = (
+        currentUser.displayName || 'FitGo User'
+      ).split(' ');
 
       const payment = await api.initiatePayment({
         amount: grandTotal,
         email: currentUser.email || '',
         first_name: nameParts[0] || 'FitGo',
-        last_name: nameParts[1] || 'User',
+        last_name: nameParts.slice(1).join(' ') || 'User',
         tx_ref: order.id,
-        phone_number: userData.phone || '',
+        phone_number: userData.phone || phone,
       });
 
-      if (payment.data?.checkout_url) {
-        const { openURL } = await import('expo-linking');
-        openURL(payment.data.checkout_url);
+      if (payment?.data?.checkout_url) {
+        const Linking = await import('expo-linking');
+
+        await Linking.openURL(payment.data.checkout_url);
+
+        // Revenue should be calculated later
+        // from your Chapa webhook after payment succeeds
         return;
+      }
+
+      throw new Error('Failed to start payment');
+    }
+
+    // ==========================
+    // CASH ON DELIVERY
+    // ==========================
+    if (payMethod === 'cash') {
+      try {
+        await api.calculateRevenue({
+          order_id: order.id,
+          store_id: storeId,
+          order_total: total,
+          delivery_fee: delivery,
+        });
+      } catch (revenueError) {
+        console.error('Revenue calculation failed:', revenueError);
       }
     }
 
     clearCart();
-    router.push(`/tracking?orderId=${order.id}`);
-  } catch (e) {
-    alert('Failed to place order. Try again.');
+
+    router.push({
+      pathname: '/tracking',
+      params: {
+        orderId: order.id,
+      },
+    });
+
+  } catch (error) {
+    console.error(error);
+    alert('Failed to place order. Please try again.');
   } finally {
     setLoading(false);
   }

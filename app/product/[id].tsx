@@ -2,7 +2,7 @@ import { Text, View, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIn
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState, useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/config/firebase';
+import { auth, db } from '@/config/firebase';
  import { api } from '@/config/api';
 import { useCart } from '@/context/CartContext';
 
@@ -12,6 +12,7 @@ const SHOE_SIZES = ['39', '40', '41', '42', '43', '44'];
 
 export default function ProductDetail() {
   const { id } = useLocalSearchParams();
+       const [rated, setRated] = useState(false);
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState('');
@@ -157,8 +158,28 @@ const handleAddToCart = () => {
           style={[styles.addBtn, added && styles.addBtnSuccess]}
           onPress={handleAddToCart}
         >
+  
           <Text style={styles.addBtnText}>{added ? '✓ Added!' : 'Add to Cart'}</Text>
         </TouchableOpacity>
+   
+
+// After added === true show rating:
+{added && !rated && (
+  <View style={styles.ratingPrompt}>
+    <Text style={styles.ratingTitle}>Rate this store</Text>
+    <View style={styles.stars}>
+      {[1,2,3,4,5].map(star => (
+        <TouchableOpacity key={star} onPress={async () => {
+          const userData = await api.getUser(auth.currentUser!.uid);
+          await api.rateStore(product.store_id, star, userData.id);
+          setRated(true);
+        }}>
+          <Text style={{ fontSize: 28 }}>⭐</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  </View>
+)}
       </View>
 
     </View>
@@ -187,6 +208,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.4)',
     borderRadius: 12, alignItems: 'center', justifyContent: 'center',
   },
+  ratingPrompt: { marginTop: 12, backgroundColor: '#1C1C1C', borderRadius: 14, padding: 16, alignItems: 'center' },
+ratingTitle: { color: 'rgba(245,243,238,0.6)', fontSize: 13, marginBottom: 10 },
+stars: { flexDirection: 'row', gap: 8 },
   backText: { fontSize: 20, color: '#fff', fontWeight: '700' },
   productImage: { width: '100%', height: '100%' },
   productEmoji: { fontSize: 100 },

@@ -184,4 +184,49 @@ initiatePayment: async (data: {
   });
   return res.json();
 },
+rateStore: async (store_id: string, rating: number, customer_id: string) => {
+  const res = await fetch(`${API_URL}/stores/${store_id}/rate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rating, customer_id }),
+  });
+  return res.json();
+},
+
+getTopStores: async () => {
+  const res = await fetch(`${API_URL}/stores/top`);
+  return res.json();
+},
+calculateRevenue: async (data: any) => {
+  const res = await fetch(`${API_URL}/revenue/calculate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return res.json();
+},
+
+getRevenueSummary: async () => {
+  const res = await fetch(`${API_URL}/revenue/summary`);
+  return res.json();
+},
+
+checkTrial: async (user_id: string) => {
+  const res = await fetch(`${API_URL}/revenue/check-trial/${user_id}`);
+  return res.json();
+},
+reportDispute: async (data: {
+  order_id: string;
+  reported_by: string;
+  reported_against: string;
+  type: string;
+  description: string;
+}) => {
+  const res = await fetch(`${API_URL}/disputes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return res.json();
+},
 };

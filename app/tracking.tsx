@@ -38,22 +38,27 @@ export default function Tracking() {
         <View style={{ width: 60 }} />
       </View>
 
-      {/* Order ID */}
-      <View style={styles.orderIdRow}>
-        <Text style={styles.orderIdLabel}>Order ID</Text>
-        <Text style={styles.orderId}>#FG-2847</Text>
-      </View>
+<View style={styles.etaBadge}>
+  <Text style={styles.etaText}>
+    {currentStep === 4 ? '🎉 Delivered!' : `🛵 ETA: ${eta} min`}
+  </Text>
+</View>
 
-      {/* Map placeholder */}
-      <View style={styles.mapBox}>
-        <Text style={styles.mapEmoji}>🗺️</Text>
-        <Text style={styles.mapText}>Live map coming soon</Text>
-        <View style={styles.etaBadge}>
-          <Text style={styles.etaText}>
-            {currentStep === 4 ? '🎉 Delivered!' : `🛵 ETA: ${eta} min`}
-          </Text>
-        </View>
-      </View>
+<TouchableOpacity
+  style={styles.reportBtn}
+  onPress={() =>
+    router.push({
+      pathname: '/report-dispute',
+      params: {
+        order_id: orderId,
+        against_id: order?.driver_id,
+      },
+    })
+  }
+>
+  <Text style={styles.reportBtnText}>⚠️ Report an Issue</Text>
+</TouchableOpacity>
+      
 
       {/* Steps */}
       <View style={styles.stepsBox}>
@@ -122,7 +127,8 @@ const styles = StyleSheet.create({
   },
   orderIdLabel: { fontSize: 14, color: 'rgba(245,243,238,0.4)' },
   orderId: { fontSize: 15, fontWeight: '700', color: '#FF3C2E' },
-
+reportBtn: { marginTop: 16, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,140,66,0.2)', alignItems: 'center', backgroundColor: 'rgba(255,140,66,0.05)' },
+reportBtnText: { color: '#FF8C42', fontSize: 13, fontWeight: '600' },
   mapBox: {
     backgroundColor: '#1C1C1C', borderRadius: 20,
     height: 160, alignItems: 'center', justifyContent: 'center',

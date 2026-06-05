@@ -1,7 +1,55 @@
-import { Text, View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { Text, View, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { auth } from '@/config/firebase';
 import { signOut } from 'firebase/auth';
+import { useEffect, useState } from 'react';
+import { api } from '@/config/api';
+const [trialWarning, setTrialWarning] = useState('');
+
+const checkSellerTrial = async () => {
+  const currentUser = auth.currentUser;
+  if (!currentUser) return;
+
+  try {
+    const userData = await api.getUser(currentUser.uid);
+
+    if (!userData || userData.error) return;
+
+    const trial = await api.checkTrial(userData.id);
+
+    if (trial.requiresPayment) {
+      Alert.alert(
+        '⚠️ Trial Expired',
+        'Your 30-day free trial has ended. Pay the ETB 1,000 registration fee to continue selling on FitGo.',
+        [
+          {
+            text: 'Pay Now',
+            onPress: () => router.push('/seller/pay-registration'),
+          },
+          {
+            text: 'Later',
+            style: 'cancel',
+          },
+        ]
+      );
+    } else if (!trial.trialExpired) {
+      const daysLeft = Math.ceil(
+        (new Date(trial.trial_ends_at).getTime() - Date.now()) /
+          (1000 * 60 * 60 * 24)
+      );
+
+      if (daysLeft <= 7) {
+        setTrialWarning(`⚠️ ${daysLeft} days left in your free trial`);
+      }
+    }
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+useEffect(() => {
+  checkSellerTrial();
+}, []);
 
 const STATS = [
   { label: 'Total Orders', value: '124', emoji: '📦' },
@@ -28,6 +76,7 @@ export default function SellerDashboard() {
     await signOut(auth);
     router.replace('/');
   };
+  
 
   return (
     <View style={styles.container}>
@@ -105,6 +154,7 @@ export default function SellerDashboard() {
       </ScrollView>
     </View>
   );
+  
 }
 
 const styles = StyleSheet.create({

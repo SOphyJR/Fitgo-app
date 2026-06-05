@@ -1,115 +1,301 @@
-import { Text, View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  Text,
+  View,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+} from 'react-native';
 import { router } from 'expo-router';
-import { useState } from 'react';
 import { auth } from '@/config/firebase';
 import { signOut } from 'firebase/auth';
+import { api } from '@/config/api';
 
 const AVAILABLE_ORDERS = [
-  { id: '#FG-2848', item: 'Jordan 1 Retro', pickup: 'Sole Street, Bole', dropoff: 'Kazanchis, Addis Ababa', amount: 4200, distance: '2.4 km', time: '12 min' },
-  { id: '#FG-2849', item: 'Leather Bag', pickup: 'Addis Leather, Piazza', dropoff: 'CMC, Addis Ababa', amount: 1200, distance: '4.1 km', time: '18 min' },
-  { id: '#FG-2850', item: 'Polo Shirt x2', pickup: 'Urban Threads, Bole', dropoff: 'Gerji, Addis Ababa', amount: 1700, distance: '3.2 km', time: '15 min' },
+  {
+    id: '#FG-2848',
+    item: 'Jordan 1 Retro',
+    pickup: 'Sole Street, Bole',
+    dropoff: 'Kazanchis, Addis Ababa',
+    amount: 4200,
+    distance: '2.4 km',
+    time: '12 min',
+  },
+  {
+    id: '#FG-2849',
+    item: 'Leather Bag',
+    pickup: 'Addis Leather, Piazza',
+    dropoff: 'CMC, Addis Ababa',
+    amount: 1200,
+    distance: '4.1 km',
+    time: '18 min',
+  },
+  {
+    id: '#FG-2850',
+    item: 'Polo Shirt x2',
+    pickup: 'Urban Threads, Bole',
+    dropoff: 'Gerji, Addis Ababa',
+    amount: 1700,
+    distance: '3.2 km',
+    time: '15 min',
+  },
 ];
 
 export default function DriverHome() {
   const [online, setOnline] = useState(true);
 
+  const [earnings, setEarnings] = useState({
+    today: 0,
+    week: 0,
+    total: 0,
+    deliveries: 0,
+  });
+
+  const [rating, setRating] = useState(4.9);
+
+  useEffect(() => {
+    loadDriverData();
+  }, []);
+
+  const loadDriverData = async () => {
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) return;
+
+      const userData = await api.getUser(currentUser.uid);
+
+      if (!userData || userData.error) return;
+
+      // Trial check
+      const trial = await api.checkTrial(userData.id);
+
+      if (trial.requiresPayment) {
+        Alert.alert(
+          '⚠️ Trial Expired',
+          'Your 30-day free trial has ended. Pay ETB 1,000 to continue as a FitGo driver.',
+          [
+            {
+              text: 'Pay Now',
+              onPress: () => router.push('/seller/pay-registration'),
+            },
+            {
+              text: 'Later',
+              style: 'cancel',
+            },
+          ]
+        );
+      }
+
+      // Earnings
+      try {
+        const revenue = await api.getDriverEarnings(userData.id);
+
+        if (revenue && !revenue.error) {
+          setEarnings({
+            today: revenue.today || 0,
+            week: revenue.week || 0,
+            total: revenue.total || 0,
+            deliveries: revenue.deliveries || 0,
+          });
+
+          setRating(revenue.rating || 4.9);
+        }
+      } catch (err) {
+        console.log('Failed to load earnings');
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleSignOut = async () => {
-    await signOut(auth);
-    router.replace('/');
+    try {
+      await signOut(auth);
+      router.replace('/');
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
     <View style={styles.container}>
-
       {/* Header */}
       <View style={styles.header}>
         <View>
           <Text style={styles.headerSub}>Driver Mode</Text>
           <Text style={styles.headerTitle}>Available Pickups</Text>
         </View>
-        <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
+
+        <TouchableOpacity
+          style={styles.signOutBtn}
+          onPress={handleSignOut}
+        >
           <Text style={styles.signOutText}>Sign Out</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Online toggle */}
+      {/* Online Toggle */}
       <View style={styles.statusBar}>
         <View style={styles.statusLeft}>
-          <View style={[styles.statusDot, { backgroundColor: online ? '#22c55e' : '#888' }]} />
-          <Text style={styles.statusText}>{online ? 'You are Online' : 'You are Offline'}</Text>
+          <View
+            style={[
+              styles.statusDot,
+              {
+                backgroundColor: online
+                  ? '#22c55e'
+                  : '#888',
+              },
+            ]}
+          />
+          <Text style={styles.statusText}>
+            {online
+              ? 'You are Online'
+              : 'You are Offline'}
+          </Text>
         </View>
+
         <TouchableOpacity
-          style={[styles.toggleBtn, online && styles.toggleBtnActive]}
+          style={[
+            styles.toggleBtn,
+            online && styles.toggleBtnActive,
+          ]}
           onPress={() => setOnline(!online)}
         >
-          <Text style={styles.toggleBtnText}>{online ? 'Go Offline' : 'Go Online'}</Text>
+          <Text style={styles.toggleBtnText}>
+            {online ? 'Go Offline' : 'Go Online'}
+          </Text>
         </TouchableOpacity>
       </View>
 
       {/* Stats */}
       <View style={styles.statsRow}>
         <View style={styles.statCard}>
-          <Text style={styles.statValue}>ETB 320</Text>
-          <Text style={styles.statLabel}>Today's earnings</Text>
+          <Text style={styles.statValue}>
+            ETB {earnings.today.toLocaleString()}
+          </Text>
+          <Text style={styles.statLabel}>
+            Today's earnings
+          </Text>
         </View>
+
         <View style={styles.statCard}>
-          <Text style={styles.statValue}>4</Text>
-          <Text style={styles.statLabel}>Deliveries today</Text>
+          <Text style={styles.statValue}>
+            {earnings.deliveries}
+          </Text>
+          <Text style={styles.statLabel}>
+            Deliveries today
+          </Text>
         </View>
+
         <View style={styles.statCard}>
-          <Text style={styles.statValue}>⭐ 4.9</Text>
-          <Text style={styles.statLabel}>Your rating</Text>
+          <Text style={styles.statValue}>
+            ⭐ {rating}
+          </Text>
+          <Text style={styles.statLabel}>
+            Your rating
+          </Text>
         </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <Text style={styles.sectionTitle}>
-          {online ? `${AVAILABLE_ORDERS.length} orders near you` : 'Go online to see orders'}
+          {online
+            ? `${AVAILABLE_ORDERS.length} orders near you`
+            : 'Go online to see orders'}
         </Text>
 
-        {online && AVAILABLE_ORDERS.map((order, i) => (
-          <View key={i} style={styles.orderCard}>
-            <View style={styles.orderTop}>
-              <Text style={styles.orderId}>{order.id}</Text>
-              <View style={styles.distanceBadge}>
-                <Text style={styles.distanceText}>{order.distance}</Text>
+        {online &&
+          AVAILABLE_ORDERS.map((order, i) => (
+            <View
+              key={i}
+              style={styles.orderCard}
+            >
+              <View style={styles.orderTop}>
+                <Text style={styles.orderId}>
+                  {order.id}
+                </Text>
+
+                <View style={styles.distanceBadge}>
+                  <Text style={styles.distanceText}>
+                    {order.distance}
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={styles.orderItem}>
+                {order.item}
+              </Text>
+
+              <View style={styles.routeRow}>
+                <View style={styles.routePoint}>
+                  <View
+                    style={[
+                      styles.routeDot,
+                      { backgroundColor: '#FF3C2E' },
+                    ]}
+                  />
+                  <Text style={styles.routeText}>
+                    {order.pickup}
+                  </Text>
+                </View>
+
+                <View style={styles.routeLine} />
+
+                <View style={styles.routePoint}>
+                  <View
+                    style={[
+                      styles.routeDot,
+                      { backgroundColor: '#22c55e' },
+                    ]}
+                  />
+                  <Text style={styles.routeText}>
+                    {order.dropoff}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.orderBottom}>
+                <View>
+                  <Text style={styles.orderEarning}>
+                    ETB {Math.round(order.amount * 0.1)}
+                  </Text>
+
+                  <Text style={styles.orderEarningLabel}>
+                    Your earning · {order.time}
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.acceptBtn}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/driver/delivery',
+                      params: {
+                        orderId: order.id,
+                      },
+                    })
+                  }
+                >
+                  <Text style={styles.acceptBtnText}>
+                    Accept
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
-
-            <Text style={styles.orderItem}>{order.item}</Text>
-
-            <View style={styles.routeRow}>
-              <View style={styles.routePoint}>
-                <View style={[styles.routeDot, { backgroundColor: '#FF3C2E' }]} />
-                <Text style={styles.routeText}>{order.pickup}</Text>
-              </View>
-              <View style={styles.routeLine} />
-              <View style={styles.routePoint}>
-                <View style={[styles.routeDot, { backgroundColor: '#22c55e' }]} />
-                <Text style={styles.routeText}>{order.dropoff}</Text>
-              </View>
-            </View>
-
-            <View style={styles.orderBottom}>
-              <View>
-                <Text style={styles.orderEarning}>ETB {Math.round(order.amount * 0.1)}</Text>
-                <Text style={styles.orderEarningLabel}>Your earning · {order.time}</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.acceptBtn}
-                onPress={() => router.push(`/driver/delivery?orderId=${order.id}`)}
-              >
-                <Text style={styles.acceptBtnText}>Accept</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ))}
+          ))}
 
         {!online && (
           <View style={styles.offlineBox}>
-            <Text style={styles.offlineEmoji}>😴</Text>
-            <Text style={styles.offlineText}>You're offline</Text>
-            <Text style={styles.offlineSub}>Toggle online to start receiving orders</Text>
+            <Text style={styles.offlineEmoji}>
+              😴
+            </Text>
+            <Text style={styles.offlineText}>
+              You're offline
+            </Text>
+            <Text style={styles.offlineSub}>
+              Toggle online to start receiving orders
+            </Text>
           </View>
         )}
 

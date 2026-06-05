@@ -19,10 +19,10 @@ export default function Home() {
 
 const fetchProducts = async () => {
   try {
-    const data = await api.getProducts();
-    setProducts(data);
+    const data = await api.getProducts(activeCategory !== 'All' ? activeCategory : undefined, search || undefined);
+    setProducts(Array.isArray(data) ? data : []);
   } catch (e) {
-    console.log('Error fetching products:', e);
+    console.log('Error:', e);
   } finally {
     setLoading(false);
   }
@@ -111,6 +111,7 @@ const fetchProducts = async () => {
         </ScrollView>
 
         {/* Products Grid */}
+        
         <View style={styles.gridHeader}>
           <Text style={styles.gridTitle}>Products</Text>
           <Text style={styles.gridCount}>{filtered.length} items</Text>
@@ -144,10 +145,13 @@ const fetchProducts = async () => {
                     <Text style={styles.cardEmoji}>{product.emoji || '📦'}</Text>
                   </View>
                 )}
-                <View style={styles.cardInfo}>
-                  <Text style={styles.cardName}>{product.name}</Text>
-                  <Text style={styles.cardPrice}>ETB {product.price?.toLocaleString()}</Text>
-                </View>
+              <View style={styles.cardInfo}>
+  <Text style={styles.cardName} numberOfLines={1}>{product.name}</Text>
+  <Text style={styles.cardPrice}>ETB {product.price?.toLocaleString()}</Text>
+  {product.rating > 0 && (
+    <Text style={styles.cardRating}>⭐ {parseFloat(product.rating).toFixed(1)}</Text>
+  )}
+</View>
               </TouchableOpacity>
             ))}
           </View>
@@ -267,5 +271,5 @@ storeChipName: { fontSize: 12, color: '#F5F3EE', fontWeight: '600', textAlign: '
   cardEmoji: { fontSize: 48 },
   cardInfo: { padding: 12 },
   cardName: { fontSize: 13, fontWeight: '600', color: '#F5F3EE', marginBottom: 4 },
-  cardPrice: { fontSize: 13, color: '#FF3C2E', fontWeight: '700' },
+cardRating: { fontSize: 11, color: 'rgba(245,243,238,0.5)', marginTop: 2 },
 });
