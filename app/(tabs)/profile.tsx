@@ -3,13 +3,18 @@ import { auth } from '@/config/firebase';
 import { router } from 'expo-router';
 import { deleteUser, signOut } from 'firebase/auth';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useState, useEffect } from 'react';
 export default function Profile() {
   const user = auth.currentUser;
+  const [userData, setUserData] = useState<any>(null);
 
-  const handleSignOut = async () => {
-    await signOut(auth);
-    router.replace('/');
-  };
+  useEffect(() => {
+    if (user) {
+      api.getUser(user.uid).then(data => {
+        if (!data.error) setUserData(data);
+      });
+    }
+  }, []);
   
 const handleDeleteAccount = async () => {
   Alert.alert(
@@ -49,14 +54,15 @@ const handleDeleteAccount = async () => {
               {user?.displayName?.charAt(0).toUpperCase() || '?'}
             </Text>
           </View>
-          <Text style={styles.name}>{user?.displayName || 'User'}</Text>
-          <Text style={styles.email}>{user?.email}</Text>
+         <Text style={styles.name}>{userData?.name || user?.displayName || 'User'}</Text>
+<Text style={styles.email}>{user?.email}</Text>
+<Text style={styles.phone}>{userData?.phone || ''}</Text>
         </View>
 
         {/* Menu items */}
         <View style={styles.menu}>
           {[
-            { emoji: '📦', label: 'My Orders', onPress: () => {} },
+           { emoji: '📦', label: 'My Orders', onPress: () => router.push('/my-orders') },
             { emoji: '❤️', label: 'Saved Items', onPress: () => {} },
             { emoji: '📍', label: 'Delivery Addresses', onPress: () => {} },
             { emoji: '🏪', label: 'Become a Seller', onPress: () => router.push('/seller') },
@@ -99,6 +105,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     marginBottom: 14,
   },
+  phone: { fontSize: 13, color: 'rgba(245,243,238,0.3)', marginTop: 2 },
   avatarText: { fontSize: 36, fontWeight: '900', color: '#fff' },
   name: { fontSize: 22, fontWeight: '800', color: '#F5F3EE', marginBottom: 4 },
   email: { fontSize: 14, color: 'rgba(245,243,238,0.4)' },

@@ -16,26 +16,28 @@ export default function Onboarding() {
         <Text style={styles.badgeText}>NOW LIVE IN ADDIS ABABA</Text>
       </View>
 
-      {/* Main heading */}
-      <Text style={styles.h1}>STYLE.{'\n'}<Text style={styles.red}>DELIVERED.{'\n'}</Text><Text style={styles.ghost}>INSTANTLY.</Text></Text>
+     <Text style={styles.h1}>
+  STYLE.{'\n'}
+  <Text style={styles.red}>DELIVERED.{'\n'}</Text>
+  <Text style={styles.ghost}>INSTANTLY.</Text>
+</Text>
 
       {/* Subtitle */}
       <Text style={styles.sub}>
         Clothes, shoes, and accessories from your favourite local stores — on your doorstep in under 30 minutes.
       </Text>
 
-      {/* Buttons */}
-      <TouchableOpacity style={styles.btnPrimary} onPress={() => router.push('/register')}>
-        <Text style={styles.btnPrimaryText}>Get Started</Text>
-      </TouchableOpacity>
-
 <TouchableOpacity style={styles.btnPrimary} onPress={() => router.push('/phone-login')}>
   <Text style={styles.btnPrimaryText}>Get Started with Phone</Text>
 </TouchableOpacity>
 
-<TouchableOpacity style={styles.btnSecondary} onPress={() => router.push('/login')}>
-  <Text style={styles.btnSecondaryText}>Sign in with Email</Text>
-</TouchableOpacity> 
+<TouchableOpacity style={styles.btnSecondary} onPress={() => router.push('/register')}>
+  <Text style={styles.btnSecondaryText}>Register with Email</Text>
+</TouchableOpacity>
+
+<TouchableOpacity onPress={() => router.push('/login')}>
+  <Text style={styles.switchText}>Sign in with Email</Text>
+</TouchableOpacity>
 
     </View>
   );
@@ -84,11 +86,11 @@ blink: {
     fontWeight: '600',
     letterSpacing: 1.5,
   },
- h1: {
-  fontSize: 58,
+h1: {
+  fontSize: 52,
   fontWeight: '900',
   color: '#F5F3EE',
-  lineHeight: 56,
+  lineHeight: 52,
   letterSpacing: 1,
   marginBottom: 24,
 },
