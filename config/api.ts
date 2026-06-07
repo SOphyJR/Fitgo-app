@@ -129,8 +129,8 @@ resendOTP: async (email: string, name: string) => {
   });
   return res.json();
 },
-approveSeller: async (email: string) => {
-  const res = await fetch(`${API_URL}/auth/approve-seller`, {
+approveUser: async (email: string) => {
+  const res = await fetch(`${API_URL}/auth/approve-user`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email }),
@@ -229,4 +229,14 @@ reportDispute: async (data: {
   });
   return res.json();
 },
+
+savePushToken: async (firebase_uid: string, push_token: string) => {
+  const res = await fetch(`${API_URL}/users/${firebase_uid}/push-token`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ push_token }),
+  });
+  return res.json();
+},
+
 };

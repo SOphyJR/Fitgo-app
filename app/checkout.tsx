@@ -1,8 +1,9 @@
-import { Text, View, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
-import { router } from 'expo-router';
-import { useState } from 'react';
+import { sendOrderNotification } from '@/app/utils/notifications';
 import { api } from '@/config/api';
 import { auth } from '@/config/firebase';
+import { router } from 'expo-router';
+import { useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { useCart } from '@/context/CartContext';
 
@@ -72,6 +73,8 @@ const handleOrder = async () => {
     if (!order?.id) {
       throw new Error('Order creation failed');
     }
+    // After order created:
+await sendOrderNotification('pending', order.id.slice(0, 8).toUpperCase());
 
     // ==========================
     // ONLINE PAYMENT (CHAPA)
