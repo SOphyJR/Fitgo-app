@@ -238,5 +238,8 @@ savePushToken: async (firebase_uid: string, push_token: string) => {
   });
   return res.json();
 },
-
+getUserByPhone: async (phone: string) => {
+  const res = await fetch(`${API_URL}/users/phone/${encodeURIComponent(phone)}`);
+  return res.json();
+},
 };

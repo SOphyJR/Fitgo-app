@@ -26,17 +26,12 @@ export default function Onboarding() {
       <Text style={styles.sub}>
         Clothes, shoes, and accessories from your favourite local stores — on your doorstep in under 30 minutes.
       </Text>
-
 <TouchableOpacity style={styles.btnPrimary} onPress={() => router.push('/phone-login')}>
-  <Text style={styles.btnPrimaryText}>Get Started with Phone</Text>
+  <Text style={styles.btnPrimaryText}>Get Started →</Text>
 </TouchableOpacity>
 
-<TouchableOpacity style={styles.btnSecondary} onPress={() => router.push('/register')}>
-  <Text style={styles.btnSecondaryText}>Register with Email</Text>
-</TouchableOpacity>
-
-<TouchableOpacity onPress={() => router.push('/login')}>
-  <Text style={styles.switchText}>Sign in with Email</Text>
+<TouchableOpacity style={styles.btnSecondary} onPress={() => router.push('/login')}>
+  <Text style={styles.btnSecondaryText}>Already have an account? Sign In</Text>
 </TouchableOpacity>
 
     </View>
